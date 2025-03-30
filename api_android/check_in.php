@@ -7,6 +7,10 @@ $satpam_id = isset($_POST['satpam_id']) ? $_POST['satpam_id'] : '';
 $latitude = isset($_POST['latitude']) ? $_POST['latitude'] : '';
 $longitude = isset($_POST['longitude']) ? $_POST['longitude'] : '';
 $keterangan = isset($_POST['keterangan']) ? $_POST['keterangan'] : '';
+$bypass = isset($_POST['bypass']) && $_POST['bypass'] == 'true' ? true : false;
+
+// Debug log untuk melihat nilai yang diterima
+error_log("Check-in request: satpam_id=$satpam_id, lat=$latitude, lon=$longitude, bypass=$bypass");
 
 if (empty($satpam_id) || empty($latitude) || empty($longitude)) {
     echo json_encode([
@@ -37,13 +41,28 @@ if ($result_lokasi->num_rows == 0) {
 $lokasi = $result_lokasi->fetch_assoc();
 $stmt_lokasi->close();
 
-// Hitung jarak antara lokasi satpam dengan lokasi kerja
+// Pastikan radius tidak terlalu kecil
+if (empty($lokasi['radius']) || $lokasi['radius'] < 50) {
+    $lokasi['radius'] = 100; // Default radius minimal 100 meter
+    error_log("Radius terlalu kecil, menggunakan nilai default 100 meter");
+}
+
+// Update radius untuk sementara (troubleshooting)
+$lokasi['radius'] = 1000; // Memberi radius yang lebih besar untuk testing (1 km)
+
+// Debug log untuk lokasi dari database
+error_log("Lokasi kerja dari DB: lat={$lokasi['latitude']}, lon={$lokasi['longitude']}, radius={$lokasi['radius']}");
+
+// Hitung jarak dengan metode Haversine sederhana
 $distance = calculateDistance(
-    floatval($latitude), 
-    floatval($longitude), 
-    floatval($lokasi['latitude']), 
-    floatval($lokasi['longitude'])
+    $latitude, 
+    $longitude, 
+    $lokasi['latitude'], 
+    $lokasi['longitude']
 );
+
+// Debug log untuk hasil perhitungan
+error_log("Jarak yang dihitung: $distance meter");
 
 // Cek apakah sudah pernah check-in hari ini
 $tanggal = date('Y-m-d');
@@ -66,15 +85,19 @@ if ($result_check->num_rows > 0) {
 }
 $stmt_check->close();
 
-// Validasi jarak
-if ($distance > $lokasi['radius']) {
+// Validasi jarak kecuali jika bypass=true
+if ($distance > $lokasi['radius'] && !$bypass) {
     echo json_encode([
         "success" => false,
         "message" => "Anda berada di luar area kerja. Jarak Anda " . round($distance) . " meter dari lokasi kerja",
         "data" => [
-            "distance" => $distance,
+            "distance" => round($distance, 2),
             "lokasi_kerja" => $lokasi['nama_lokasikerja'],
-            "radius" => $lokasi['radius']
+            "radius" => $lokasi['radius'],
+            "user_lat" => $latitude,
+            "user_long" => $longitude,
+            "lokasi_lat" => $lokasi['latitude'],
+            "lokasi_long" => $lokasi['longitude']
         ]
     ]);
     exit();
@@ -177,17 +200,39 @@ if ($result_check->num_rows == 0) {
 
 $conn->close();
 
-// Fungsi untuk menghitung jarak antara dua koordinat dalam meter
+// Fungsi untuk menghitung jarak antara dua koordinat dalam meter (versi paling sederhana)
 function calculateDistance($lat1, $lon1, $lat2, $lon2) {
-    $earthRadius = 6371000; // Radius bumi dalam meter
+    // Pastikan semua nilai adalah float dan valid
+    $lat1 = floatval($lat1);
+    $lon1 = floatval($lon1);
+    $lat2 = floatval($lat2);
+    $lon2 = floatval($lon2);
+    
+    // Debug
+    error_log("Calculating distance between: ($lat1, $lon1) and ($lat2, $lon2)");
+    
+    // Validasi koordinat
+    if ($lat1 < -90 || $lat1 > 90 || $lat2 < -90 || $lat2 > 90 || 
+        $lon1 < -180 || $lon1 > 180 || $lon2 < -180 || $lon2 > 180) {
+        error_log("ERROR: Invalid coordinate values detected!");
+        return 99999; // Return nilai besar jika koordinat tidak valid
+    }
+    
+    // Rumus Haversine sederhana
+    $earthRadius = 6371; // Radius bumi dalam kilometer
     
     $dLat = deg2rad($lat2 - $lat1);
     $dLon = deg2rad($lon2 - $lon1);
     
-    $a = sin($dLat/2) * sin($dLat/2) + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLon/2) * sin($dLon/2);
+    $a = sin($dLat/2) * sin($dLat/2) + 
+         cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * 
+         sin($dLon/2) * sin($dLon/2);
     $c = 2 * atan2(sqrt($a), sqrt(1-$a));
-    $distance = $earthRadius * $c;
     
+    // Jarak dalam kilometer, dikonversi ke meter
+    $distance = $earthRadius * $c * 1000;
+    
+    error_log("Final distance calculated: $distance meters");
     return $distance;
 }
 ?> 

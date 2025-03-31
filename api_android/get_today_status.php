@@ -1,6 +1,9 @@
 <?php
 include 'koneksi.php';
 
+// Set timezone ke Asia/Jakarta
+date_default_timezone_set('Asia/Jakarta');
+
 header('Content-Type: application/json');
 
 $satpam_id = isset($_POST['satpam_id']) ? $_POST['satpam_id'] : '';
@@ -15,6 +18,7 @@ if (empty($satpam_id)) {
 
 // Ambil tanggal hari ini
 $tanggal = date('Y-m-d');
+$jam_sekarang = date('H:i:s');
 
 // Ambil data satpam
 $query_satpam = "SELECT ds.*, lk.nama_lokasikerja, lk.latitude, lk.longitude, lk.radius 
@@ -95,6 +99,7 @@ echo json_encode([
     "message" => "Data status hari ini berhasil diambil",
     "data" => [
         "tanggal" => $tanggal,
+        "waktu_server" => $jam_sekarang,
         "satpam" => [
             "id" => $satpam['id'],
             "nama" => $satpam['nama'],

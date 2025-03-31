@@ -1,6 +1,9 @@
 <?php
 include 'koneksi.php';
 
+// Set timezone ke Asia/Jakarta
+date_default_timezone_set('Asia/Jakarta');
+
 header('Content-Type: application/json');
 
 $satpam_id = isset($_POST['satpam_id']) ? $_POST['satpam_id'] : '';
@@ -10,7 +13,7 @@ $keterangan = isset($_POST['keterangan']) ? $_POST['keterangan'] : '';
 $bypass = isset($_POST['bypass']) && $_POST['bypass'] == 'true' ? true : false;
 
 // Debug log untuk melihat nilai yang diterima
-error_log("Check-out request: satpam_id=$satpam_id, lat=$latitude, lon=$longitude, bypass=$bypass");
+error_log("Check-out request: satpam_id=$satpam_id, lat=$latitude, lon=$longitude, bypass=$bypass, time=".date('Y-m-d H:i:s'));
 
 if (empty($satpam_id) || empty($latitude) || empty($longitude)) {
     echo json_encode([

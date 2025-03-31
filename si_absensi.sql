@@ -25,7 +25,7 @@ CREATE TABLE `absensi` (
   `satpam_id` bigint unsigned NOT NULL,
   `tanggal` date NOT NULL,
   `jam_masuk` time DEFAULT NULL,
-  `jam_keluar` time DEFAULT NULL,
+  `jam_keluar` time DEFAULT '00:00:00',
   `latitude_masuk` decimal(10,6) DEFAULT NULL,
   `longitude_masuk` decimal(10,6) DEFAULT NULL,
   `latitude_keluar` decimal(10,6) DEFAULT NULL,
@@ -37,9 +37,12 @@ CREATE TABLE `absensi` (
   PRIMARY KEY (`id`),
   KEY `satpam_id` (`satpam_id`),
   CONSTRAINT `absensi_ibfk_1` FOREIGN KEY (`satpam_id`) REFERENCES `datasatpam` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 /*Data for the table `absensi` */
+
+insert  into `absensi`(`id`,`satpam_id`,`tanggal`,`jam_masuk`,`jam_keluar`,`latitude_masuk`,`longitude_masuk`,`latitude_keluar`,`longitude_keluar`,`status`,`keterangan`,`created_at`,`updated_at`) values 
+(3,1,'2025-03-31','17:55:46','00:00:00',-7.744701,112.177540,NULL,NULL,'terlambat','','2025-03-31 17:55:46','2025-03-31 17:55:46');
 
 /*Table structure for table `cache` */
 
@@ -144,7 +147,7 @@ CREATE TABLE `datasatpam` (
 /*Data for the table `datasatpam` */
 
 insert  into `datasatpam`(`id`,`nip`,`nik`,`foto`,`nama`,`pekerjaan`,`status`,`no_pkwt_pkwtt`,`kontrak`,`terhitung_mulai_tugas`,`jabatan`,`lokasikerja_id`,`wilayah_kerja`,`jenis_kelamin`,`tempat_lahir`,`tanggal_lahir`,`usia`,`warga negara`,`agama`,`no_hp`,`email`,`alamat`,`kelurahan`,`kecamatan`,`kabupaten`,`provinsi`,`negara`,`nama_ibu`,`no_kontak_darurat`,`nama_kontak_darurat`,`nama_ahli_waris`,`tempat_lahir_ahli_waris`,`tanggal_lahir_ahli_waris`,`hub_ahli_waris`,`status_nikah`,`jumlah_anak`,`npwp`,`nama_bank`,`no_rek`,`nama_pemilik_rek`,`no_dplk`,`pend_terakhir`,`sertifikasi_satpam`,`no_reg_kta`,`no_kta`,`polda`,`polres`,`no_bpjs_kesehatan`,`no_bpjs_ketenagakerjaan`,`ukuran_baju`,`ukuran_celana`,`ukuran sepatu`,`ukuran_topi`,`created_at`,`updated_at`) values 
-(1,'12345','12345','1743322483_1.jpg','MISBACHUL HUDA','Satpam','PKWTT','017/PKWTT-AMP/VII/2023','jatin','2025-03-28','Anggota',1,'Kota Malang','Laki-laki','Malang','2000-01-08',25,'WNI','Islam','082333546365','email@gmail.com','JL. DIPONEGORO NO. 2, RT. 2/2','JUNREJO','JUNREJO','Kota Batu','JAWA TIMUR','Indonesia','Lasemii','081249213511','Sri Wijayanti','Sri Wijayanti','Malang','2000-01-05','Istri','K3',3,NULL,'Mandiri','1150006824272','EDY PURWITO','1002301298308','SMA','Gada Pratama','13.13.887.054','2861/KTASATPAM-GP/II/2024/Ditbinmas','Polda Jawa Timur','Kota Batu','8022429420','1134336385','M',30,40,55,'2025-03-30 11:07:02','2025-03-30 11:07:05'),
+(1,'12345','12345','1743322483_1.jpg','MISBACHUL HUDA','Satpam','PKWTT','017/PKWTT-AMP/VII/2023','jatin','2025-03-28','Anggota',1,'Kota Malang','Laki-laki','Malang','2000-01-08',25,'WNI','Islam','082333546365','tes@gmail.com','JL. DIPONEGORO NO. 2, RT. 2/2','JUNREJO','JUNREJO','Kota Batu','JAWA TIMUR','Indonesia','Lasemii','081249213511','Sri Wijayanti','Sri Wijayanti','Malang','2000-01-05','Istri','K3',3,NULL,'Mandiri','1150006824272','EDY PURWITO','1002301298308','SMA','Gada Pratama','13.13.887.054','2861/KTASATPAM-GP/II/2024/Ditbinmas','Polda Jawa Timur','Kota Batu','8022429420','1134336385','M',30,40,55,'2025-03-30 11:07:02','2025-03-30 11:07:05'),
 (2,'54321','54321','1743322723_2.jpg','frankie steinlie','Satpam',NULL,NULL,NULL,NULL,'Anggota',2,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'08883866931','frankie.steinlie@gmail.com','medann',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 
 /*Table structure for table `failed_jobs` */
@@ -185,7 +188,7 @@ CREATE TABLE `jadwal` (
 /*Data for the table `jadwal` */
 
 insert  into `jadwal`(`id`,`satpam_id`,`tanggal`,`shift`,`keterangan`,`created_at`,`updated_at`) values 
-(1,1,'2025-03-30','S',NULL,'2025-03-30 14:33:57','2025-03-30 14:55:14');
+(1,1,'2025-03-31','S',NULL,'2025-03-30 14:33:57','2025-03-31 17:16:16');
 
 /*Table structure for table `job_batches` */
 
@@ -246,8 +249,8 @@ CREATE TABLE `lokasikerja` (
 /*Data for the table `lokasikerja` */
 
 insert  into `lokasikerja`(`id`,`nama_lokasikerja`,`ultg_id`,`latitude`,`longitude`,`radius`,`created_at`,`updated_at`) values 
-(1,'GI 150KV LAWANG',1,-7.744757,112.177116,1000,'2025-03-30 10:41:39','2025-03-30 10:41:43'),
-(2,'GI GULUK-GULUK',2,-7.744757,112.177116,1000,'2025-03-30 10:42:29','2025-03-30 10:42:32');
+(1,'GI 150KV LAWANG',1,-7.744757,112.177116,100,'2025-03-30 10:41:39','2025-03-30 10:41:43'),
+(2,'GI GULUK-GULUK',2,-7.744757,112.177116,100,'2025-03-30 10:42:29','2025-03-30 10:42:32');
 
 /*Table structure for table `migrations` */
 

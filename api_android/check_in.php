@@ -1,6 +1,9 @@
 <?php
 include 'koneksi.php';
 
+// Set timezone ke Asia/Jakarta
+date_default_timezone_set('Asia/Jakarta');
+
 header('Content-Type: application/json');
 
 $satpam_id = isset($_POST['satpam_id']) ? $_POST['satpam_id'] : '';
@@ -10,7 +13,7 @@ $keterangan = isset($_POST['keterangan']) ? $_POST['keterangan'] : '';
 $bypass = isset($_POST['bypass']) && $_POST['bypass'] == 'true' ? true : false;
 
 // Debug log untuk melihat nilai yang diterima
-error_log("Check-in request: satpam_id=$satpam_id, lat=$latitude, lon=$longitude, bypass=$bypass");
+error_log("Check-in request: satpam_id=$satpam_id, lat=$latitude, lon=$longitude, bypass=$bypass, time=".date('Y-m-d H:i:s'));
 
 if (empty($satpam_id) || empty($latitude) || empty($longitude)) {
     echo json_encode([
@@ -147,7 +150,7 @@ if ($result_check->num_rows == 0) {
     $query_insert = "INSERT INTO absensi (satpam_id, tanggal, jam_masuk, latitude_masuk, longitude_masuk, status, keterangan) 
                     VALUES (?, ?, ?, ?, ?, ?, ?)";
     $stmt_insert = $conn->prepare($query_insert);
-    $stmt_insert->bind_param("issddsss", $satpam_id, $tanggal, $jam_masuk, $latitude, $longitude, $status, $keterangan);
+    $stmt_insert->bind_param("issddss", $satpam_id, $tanggal, $jam_masuk, $latitude, $longitude, $status, $keterangan);
     
     if ($stmt_insert->execute()) {
         echo json_encode([

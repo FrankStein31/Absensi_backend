@@ -10,24 +10,24 @@ try {
     $conn->begin_transaction();
 
     try {
-        $nik = isset($_POST['nik']) ? $_POST['nik'] : '';
+        $email = isset($_POST['email']) ? $_POST['email'] : '';
         $nip = isset($_POST['nip']) ? $_POST['nip'] : '';
         $nama = isset($_POST['nama']) ? $_POST['nama'] : '';
         $lokasikerja_id = isset($_POST['lokasikerja_id']) ? $_POST['lokasikerja_id'] : null;
         
-        if (empty($nik) || empty($nip) || empty($nama)) {
-            throw new Exception("NIK, NIP, dan Nama harus diisi");
+        if (empty($email) || empty($nip) || empty($nama)) {
+            throw new Exception("Email, NIP, dan Nama harus diisi");
         }
 
-        // Periksa apakah NIK sudah terdaftar
-        $checkNIKQuery = "SELECT nik FROM datasatpam WHERE nik = ?";
-        $stmt = $conn->prepare($checkNIKQuery);
-        $stmt->bind_param("s", $nik);
+        // Periksa apakah Email sudah terdaftar
+        $checkEmailQuery = "SELECT email FROM datasatpam WHERE email = ?";
+        $stmt = $conn->prepare($checkEmailQuery);
+        $stmt->bind_param("s", $email);
         $stmt->execute();
         $result = $stmt->get_result();
 
         if ($result->num_rows > 0) {
-            throw new Exception("NIK sudah terdaftar");
+            throw new Exception("Email sudah terdaftar");
         }
         $stmt->close();
 
@@ -46,9 +46,9 @@ try {
         // Default jabatan adalah Anggota
         $jabatan = "Anggota";
 
-        $query = "INSERT INTO datasatpam (nik, nip, nama, jabatan, lokasikerja_id) VALUES (?, ?, ?, ?, ?)";
+        $query = "INSERT INTO datasatpam (email, nip, nama, jabatan, lokasikerja_id) VALUES (?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($query);
-        $stmt->bind_param("ssssi", $nik, $nip, $nama, $jabatan, $lokasikerja_id);
+        $stmt->bind_param("ssssi", $email, $nip, $nama, $jabatan, $lokasikerja_id);
         
         if (!$stmt->execute()) {
             throw new Exception("Gagal melakukan registrasi: " . $conn->error);
@@ -64,7 +64,7 @@ try {
             "message" => "Registrasi berhasil",
             "data" => [
                 "id" => $satpam_id,
-                "nik" => $nik,
+                "email" => $email,
                 "nip" => $nip,
                 "nama" => $nama,
                 "jabatan" => $jabatan,

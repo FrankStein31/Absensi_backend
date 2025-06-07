@@ -3,20 +3,20 @@ include 'koneksi.php';
 
 header('Content-Type: application/json');
 
-$nik = isset($_POST['nik']) ? $_POST['nik'] : '';
+$email = isset($_POST['email']) ? $_POST['email'] : '';
 $nip = isset($_POST['nip']) ? $_POST['nip'] : '';
 
-if (empty($nik) || empty($nip)) {
+if (empty($email) || empty($nip)) {
     echo json_encode([
         "success" => false,
-        "message" => "NIK dan NIP harus diisi"
+        "message" => "Email dan NIP harus diisi"
     ]);
     exit();
 }
 
-$query = "SELECT id, nama, nik, nip, jabatan, lokasikerja_id, foto FROM datasatpam WHERE nik = ?";
+$query = "SELECT id, nama, email, nip, jabatan, lokasikerja_id, foto FROM datasatpam WHERE email = ?";
 $stmt = $conn->prepare($query);
-$stmt->bind_param("s", $nik);
+$stmt->bind_param("s", $email);
 $stmt->execute();
 $result = $stmt->get_result();
 
@@ -41,7 +41,7 @@ if ($result->num_rows > 0) {
             "data" => [
                 "id" => $user['id'],
                 "nama" => $user['nama'],
-                "nik" => $user['nik'],
+                "email" => $user['email'],
                 "nip" => $user['nip'],
                 "jabatan" => $user['jabatan'],
                 "foto" => $user['foto'],
@@ -53,7 +53,7 @@ if ($result->num_rows > 0) {
                     "latitude" => $location['latitude'],
                     "longitude" => $location['longitude'],
                     "radius" => $location['radius']
-                ]
+            ]
             ]
         ]);
         
@@ -67,7 +67,7 @@ if ($result->num_rows > 0) {
 } else {
     echo json_encode([
         "success" => false,
-        "message" => "NIK tidak terdaftar"
+        "message" => "Email tidak terdaftar"
     ]);
 }
 

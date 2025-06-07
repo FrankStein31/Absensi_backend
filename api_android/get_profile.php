@@ -1,17 +1,17 @@
 <?php
 include 'koneksi.php';
 
-header('Content-Type: application/json');
+    header('Content-Type: application/json');
 
 $satpam_id = isset($_POST['satpam_id']) ? $_POST['satpam_id'] : '';
 
 if (empty($satpam_id)) {
-    echo json_encode([
-        "success" => false,
+        echo json_encode([
+            "success" => false,
         "message" => "ID Satpam harus diisi"
-    ]);
-    exit();
-}
+        ]);
+        exit();
+    }
 
 $query = "SELECT ds.*, lk.nama_lokasikerja, lk.latitude, lk.longitude, lk.radius, u.nama_ultg, up.nama_upt 
           FROM datasatpam ds
@@ -19,19 +19,19 @@ $query = "SELECT ds.*, lk.nama_lokasikerja, lk.latitude, lk.longitude, lk.radius
           LEFT JOIN ultg u ON lk.ultg_id = u.id 
           LEFT JOIN upt up ON u.upt_id = up.id 
           WHERE ds.id = ?";
-
-$stmt = $conn->prepare($query);
+              
+    $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $satpam_id);
-$stmt->execute();
-$result = $stmt->get_result();
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-if ($result->num_rows > 0) {
+    if ($result->num_rows > 0) {
     $profile = $result->fetch_assoc();
-    
+        
     echo json_encode([
-        "success" => true,
+            "success" => true,
         "message" => "Data profile berhasil diambil",
-        "data" => [
+            "data" => [
             "id" => $profile['id'],
             "nik" => $profile['nik'],
             "nip" => $profile['nip'],
@@ -56,13 +56,13 @@ if ($result->num_rows > 0) {
             ]
         ]
     ]);
-} else {
-    echo json_encode([
-        "success" => false,
+    } else {
+        echo json_encode([
+            "success" => false,
         "message" => "Data satpam tidak ditemukan"
-    ]);
-}
+        ]);
+    }
 
-$stmt->close();
-$conn->close();
+    $stmt->close();
+    $conn->close();
 ?>

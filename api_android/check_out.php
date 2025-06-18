@@ -104,7 +104,7 @@ if ($result->num_rows == 0) {
 $absensi = $result->fetch_assoc();
 
 // Cek apakah sudah check-out
-if ($absensi['jam_keluar'] != "00:00:00") {
+if ($absensi['jam_keluar'] != NULL) {
     echo json_encode([
         "success" => false,
         "message" => "Anda sudah melakukan check-out hari ini"

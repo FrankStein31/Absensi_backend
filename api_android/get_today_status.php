@@ -80,7 +80,7 @@ $status = [
 
 if ($absensi !== null) {
     $status["check_in"] = !empty($absensi['jam_masuk']);
-    $status["check_out"] = !empty($absensi['jam_keluar']);
+    $status["check_out"] = !empty($absensi['jam_keluar']) && $absensi['jam_keluar'] != "00:00:00";
     $status["jam_masuk"] = $absensi['jam_masuk'];
     $status["jam_keluar"] = $absensi['jam_keluar'];
     $status["status_kehadiran"] = $absensi['status'];

@@ -11,14 +11,15 @@ $latitude = isset($_POST['latitude']) ? $_POST['latitude'] : '';
 $longitude = isset($_POST['longitude']) ? $_POST['longitude'] : '';
 $keterangan = isset($_POST['keterangan']) ? $_POST['keterangan'] : '';
 $bypass = isset($_POST['bypass']) && $_POST['bypass'] == 'true' ? true : false;
+$shift = isset($_POST['shift']) ? $_POST['shift'] : '';
 
 // Debug log untuk melihat nilai yang diterima
-error_log("Check-in request: satpam_id=$satpam_id, lat=$latitude, lon=$longitude, bypass=$bypass, time=".date('Y-m-d H:i:s'));
+error_log("Check-in request: satpam_id=$satpam_id, lat=$latitude, lon=$longitude, bypass=$bypass, shift=$shift, time=".date('Y-m-d H:i:s'));
 
-if (empty($satpam_id) || empty($latitude) || empty($longitude)) {
+if (empty($satpam_id) || empty($latitude) || empty($longitude) || empty($shift)) {
     echo json_encode([
         "success" => false,
-        "message" => "ID Satpam, latitude, dan longitude harus diisi"
+        "message" => "ID Satpam, latitude, longitude, dan shift harus diisi"
     ]);
     exit();
 }
@@ -67,11 +68,11 @@ $distance = calculateDistance(
 // Debug log untuk hasil perhitungan
 error_log("Jarak yang dihitung: $distance meter");
 
-// Cek apakah sudah pernah check-in hari ini
+// Cek apakah sudah pernah check-in untuk shift ini hari ini
 $tanggal = date('Y-m-d');
-$query_check = "SELECT * FROM absensi WHERE satpam_id = ? AND tanggal = ?";
+$query_check = "SELECT * FROM absensi WHERE satpam_id = ? AND tanggal = ? AND shift = ?";
 $stmt_check = $conn->prepare($query_check);
-$stmt_check->bind_param("is", $satpam_id, $tanggal);
+$stmt_check->bind_param("iss", $satpam_id, $tanggal, $shift);
 $stmt_check->execute();
 $result_check = $stmt_check->get_result();
 
@@ -81,7 +82,7 @@ if ($result_check->num_rows > 0) {
     if (!empty($absensi['jam_masuk'])) {
         echo json_encode([
             "success" => false,
-            "message" => "Anda sudah melakukan check-in hari ini"
+            "message" => "Anda sudah melakukan check-in untuk shift $shift hari ini"
         ]);
         exit();
     }
@@ -111,46 +112,32 @@ $jam_masuk = date('H:i:s');
 
 // Cek status keterlambatan
 $status = 'hadir';
-$shift = '';
 
-// Ambil jadwal hari ini
-$query_jadwal = "SELECT shift FROM jadwal WHERE satpam_id = ? AND tanggal = ?";
-$stmt_jadwal = $conn->prepare($query_jadwal);
-$stmt_jadwal->bind_param("is", $satpam_id, $tanggal);
-$stmt_jadwal->execute();
-$result_jadwal = $stmt_jadwal->get_result();
-
-if ($result_jadwal->num_rows > 0) {
-    $jadwal = $result_jadwal->fetch_assoc();
-    $shift = $jadwal['shift'];
-    
-    // Cek keterlambatan berdasarkan shift
-    $jam_shift = 0;
-    switch ($shift) {
-        case 'P':
-            $jam_shift = 7; // 07:00
-            break;
-        case 'S':
-            $jam_shift = 15; // 15:00
-            break;
-        case 'M':
-            $jam_shift = 23; // 23:00
-            break;
-    }
-    
-    $jam_sekarang = intval(date('H'));
-    if ($jam_sekarang > $jam_shift && $shift != 'L') {
-        $status = 'terlambat';
-    }
+// Cek keterlambatan berdasarkan shift
+$jam_shift = 0;
+switch ($shift) {
+    case 'P':
+        $jam_shift = 7; // 07:00
+        break;
+    case 'S':
+        $jam_shift = 15; // 15:00
+        break;
+    case 'M':
+        $jam_shift = 23; // 23:00
+        break;
 }
-$stmt_jadwal->close();
 
-// Jika belum ada data absensi hari ini, buat baru
+$jam_sekarang = intval(date('H'));
+if ($jam_sekarang > $jam_shift && $shift != 'L') {
+    $status = 'terlambat';
+}
+
+// Jika belum ada data absensi hari ini untuk shift ini, buat baru
 if ($result_check->num_rows == 0) {
-    $query_insert = "INSERT INTO absensi (satpam_id, tanggal, jam_masuk, latitude_masuk, longitude_masuk, status, keterangan) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?)";
+    $query_insert = "INSERT INTO absensi (satpam_id, tanggal, shift, jam_masuk, latitude_masuk, longitude_masuk, status, keterangan) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt_insert = $conn->prepare($query_insert);
-    $stmt_insert->bind_param("issddss", $satpam_id, $tanggal, $jam_masuk, $latitude, $longitude, $status, $keterangan);
+    $stmt_insert->bind_param("isssddss", $satpam_id, $tanggal, $shift, $jam_masuk, $latitude, $longitude, $status, $keterangan);
     
     if ($stmt_insert->execute()) {
         echo json_encode([
@@ -158,9 +145,9 @@ if ($result_check->num_rows == 0) {
             "message" => "Check-in berhasil",
             "data" => [
                 "tanggal" => $tanggal,
+                "shift" => $shift,
                 "jam_masuk" => $jam_masuk,
                 "status" => $status,
-                "shift" => $shift,
                 "lokasi" => $lokasi['nama_lokasikerja'],
                 "distance" => round($distance, 2)
             ]
@@ -173,11 +160,11 @@ if ($result_check->num_rows == 0) {
     }
     $stmt_insert->close();
 } else {
-    // Update data absensi yang sudah ada (mungkin sudah di-insert tapi belum ada jam masuk)
+    // Update data absensi yang sudah ada
     $query_update = "UPDATE absensi SET jam_masuk = ?, latitude_masuk = ?, longitude_masuk = ?, status = ?, keterangan = ? 
-                    WHERE satpam_id = ? AND tanggal = ?";
+                    WHERE satpam_id = ? AND tanggal = ? AND shift = ?";
     $stmt_update = $conn->prepare($query_update);
-    $stmt_update->bind_param("sddssis", $jam_masuk, $latitude, $longitude, $status, $keterangan, $satpam_id, $tanggal);
+    $stmt_update->bind_param("sddssis", $jam_masuk, $latitude, $longitude, $status, $keterangan, $satpam_id, $tanggal, $shift);
     
     if ($stmt_update->execute()) {
         echo json_encode([
@@ -185,9 +172,9 @@ if ($result_check->num_rows == 0) {
             "message" => "Check-in berhasil",
             "data" => [
                 "tanggal" => $tanggal,
+                "shift" => $shift,
                 "jam_masuk" => $jam_masuk,
                 "status" => $status,
-                "shift" => $shift,
                 "lokasi" => $lokasi['nama_lokasikerja'],
                 "distance" => round($distance, 2)
             ]

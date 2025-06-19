@@ -42,48 +42,69 @@ $satpam = $result_satpam->fetch_assoc();
 $stmt_satpam->close();
 
 // Ambil jadwal hari ini
-$query_jadwal = "SELECT * FROM jadwal WHERE satpam_id = ? AND tanggal = ?";
+$query_jadwal = "SELECT * FROM jadwal WHERE satpam_id = ? AND tanggal = ? ORDER BY FIELD(shift, 'P', 'S', 'M', 'L')";
 $stmt_jadwal = $conn->prepare($query_jadwal);
 $stmt_jadwal->bind_param("is", $satpam_id, $tanggal);
 $stmt_jadwal->execute();
 $result_jadwal = $stmt_jadwal->get_result();
 
-$jadwal = null;
-if ($result_jadwal->num_rows > 0) {
-    $jadwal = $result_jadwal->fetch_assoc();
+$jadwal_list = [];
+while ($row = $result_jadwal->fetch_assoc()) {
+    $jadwal_list[] = $row;
 }
 $stmt_jadwal->close();
 
 // Ambil absensi hari ini
-$query_absensi = "SELECT * FROM absensi WHERE satpam_id = ? AND tanggal = ?";
+$query_absensi = "SELECT * FROM absensi WHERE satpam_id = ? AND tanggal = ? ORDER BY FIELD(shift, 'P', 'S', 'M', 'L')";
 $stmt_absensi = $conn->prepare($query_absensi);
 $stmt_absensi->bind_param("is", $satpam_id, $tanggal);
 $stmt_absensi->execute();
 $result_absensi = $stmt_absensi->get_result();
 
-$absensi = null;
-if ($result_absensi->num_rows > 0) {
-    $absensi = $result_absensi->fetch_assoc();
+$absensi_list = [];
+while ($row = $result_absensi->fetch_assoc()) {
+    $absensi_list[$row['shift']] = $row;
 }
 $stmt_absensi->close();
 
-// Tentukan status absensi dan jadwal
-$status = [
-    "check_in" => false,
-    "check_out" => false,
-    "ada_jadwal" => $jadwal !== null,
-    "shift" => $jadwal !== null ? $jadwal['shift'] : "-",
-    "jam_masuk" => null,
-    "jam_keluar" => null,
-    "status_kehadiran" => "belum_absen"
-];
+// Tentukan shift aktif saat ini
+$jam = intval(date('H'));
+$current_shift = '';
+if ($jam >= 7 && $jam < 15) {
+    $current_shift = 'P';
+} elseif ($jam >= 15 && $jam < 23) {
+    $current_shift = 'S';
+} else {
+    $current_shift = 'M';
+}
 
-if ($absensi !== null) {
-    $status["check_in"] = !empty($absensi['jam_masuk']);
-    $status["check_out"] = !empty($absensi['jam_keluar']) && $absensi['jam_keluar'] != "00:00:00";
-    $status["jam_masuk"] = $absensi['jam_masuk'];
-    $status["jam_keluar"] = $absensi['jam_keluar'];
-    $status["status_kehadiran"] = $absensi['status'];
+// Default status untuk setiap shift
+$default_shifts = ['P', 'S', 'M'];
+$shift_status = [];
+foreach ($default_shifts as $s) {
+    $shift_status[$s] = [
+        "check_in" => false,
+        "check_out" => false,
+        "jam_masuk" => null,
+        "jam_keluar" => null,
+        "status_kehadiran" => "belum_absen"
+    ];
+}
+
+// Update status untuk shift yang ada di jadwal
+foreach ($jadwal_list as $jadwal) {
+    $shift = $jadwal['shift'];
+    $absensi = isset($absensi_list[$shift]) ? $absensi_list[$shift] : null;
+    
+    if ($absensi !== null) {
+        $shift_status[$shift] = [
+            "check_in" => !empty($absensi['jam_masuk']),
+            "check_out" => !empty($absensi['jam_keluar']) && $absensi['jam_keluar'] != "00:00:00",
+            "jam_masuk" => $absensi['jam_masuk'],
+            "jam_keluar" => $absensi['jam_keluar'],
+            "status_kehadiran" => $absensi['status']
+        ];
+    }
 }
 
 // Keterangan shift
@@ -94,12 +115,29 @@ $shift_info = [
     "L" => "Libur"
 ];
 
+// Status untuk response
+$status = [
+    "check_in" => false,
+    "check_out" => false,
+    "ada_jadwal" => !empty($jadwal_list),
+    "shift" => $current_shift,
+    "jam_masuk" => null,
+    "jam_keluar" => null,
+    "status_kehadiran" => "belum_absen"
+];
+
+// Update status berdasarkan shift aktif
+if (isset($shift_status[$current_shift])) {
+    $status = array_merge($status, $shift_status[$current_shift]);
+}
+
 echo json_encode([
     "success" => true,
     "message" => "Data status hari ini berhasil diambil",
     "data" => [
         "tanggal" => $tanggal,
         "waktu_server" => $jam_sekarang,
+        "current_shift" => $current_shift,
         "satpam" => [
             "id" => $satpam['id'],
             "nama" => $satpam['nama'],
@@ -111,17 +149,9 @@ echo json_encode([
             "longitude" => $satpam['longitude'],
             "radius" => $satpam['radius']
         ],
-        "jadwal" => $jadwal !== null ? [
-            "shift" => $jadwal['shift'],
-            "keterangan" => $jadwal['keterangan'],
-            "jam_kerja" => isset($shift_info[$jadwal['shift']]) ? $shift_info[$jadwal['shift']] : "-"
-        ] : null,
-        "absensi" => $absensi !== null ? [
-            "jam_masuk" => $absensi['jam_masuk'],
-            "jam_keluar" => $absensi['jam_keluar'],
-            "status" => $absensi['status'],
-            "keterangan" => $absensi['keterangan']
-        ] : null,
+        "jadwal" => $jadwal_list,
+        "shift_status" => $shift_status,
+        "shift_info" => $shift_info,
         "status" => $status
     ]
 ]);

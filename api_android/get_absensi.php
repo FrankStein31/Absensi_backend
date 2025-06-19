@@ -34,11 +34,12 @@ $satpam = $result_satpam->fetch_assoc();
 $stmt_satpam->close();
 
 // Ambil riwayat absensi satpam
-$query = "SELECT a.*, j.shift
+$query = "SELECT a.* 
           FROM absensi a
-          LEFT JOIN jadwal j ON a.satpam_id = j.satpam_id AND a.tanggal = j.tanggal
-          WHERE a.satpam_id = ? AND MONTH(a.tanggal) = ? AND YEAR(a.tanggal) = ?
-          ORDER BY a.tanggal DESC";
+          WHERE a.satpam_id = ? 
+          AND MONTH(a.tanggal) = ? 
+          AND YEAR(a.tanggal) = ?
+          ORDER BY a.tanggal DESC, a.created_at DESC";
 $stmt = $conn->prepare($query);
 $stmt->bind_param("iii", $satpam_id, $bulan, $tahun);
 $stmt->execute();
@@ -76,7 +77,8 @@ if ($result->num_rows > 0) {
             "status" => $row['status'],
             "shift" => $shift,
             "durasi" => $durasi,
-            "keterangan" => $row['keterangan']
+            "keterangan" => $row['keterangan'],
+            "created_at" => $row['created_at']
         ];
     }
 }

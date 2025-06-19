@@ -11,14 +11,15 @@ $latitude = isset($_POST['latitude']) ? $_POST['latitude'] : '';
 $longitude = isset($_POST['longitude']) ? $_POST['longitude'] : '';
 $keterangan = isset($_POST['keterangan']) ? $_POST['keterangan'] : '';
 $bypass = isset($_POST['bypass']) && $_POST['bypass'] == 'true' ? true : false;
+$shift = isset($_POST['shift']) ? $_POST['shift'] : '';
 
 // Debug log untuk melihat nilai yang diterima
-error_log("Check-out request: satpam_id=$satpam_id, lat=$latitude, lon=$longitude, bypass=$bypass, time=".date('Y-m-d H:i:s'));
+error_log("Check-out request: satpam_id=$satpam_id, lat=$latitude, lon=$longitude, bypass=$bypass, shift=$shift, time=".date('Y-m-d H:i:s'));
 
-if (empty($satpam_id) || empty($latitude) || empty($longitude)) {
+if (empty($satpam_id) || empty($latitude) || empty($longitude) || empty($shift)) {
     echo json_encode([
         "success" => false,
-        "message" => "ID Satpam, latitude, dan longitude harus diisi"
+        "message" => "ID Satpam, latitude, longitude, dan shift harus diisi"
     ]);
     exit();
 }
@@ -85,18 +86,18 @@ if ($distance > $lokasi['radius'] && !$bypass) {
     exit();
 }
 
-// Cek apakah sudah check-in hari ini
+// Cek apakah sudah check-in untuk shift ini hari ini
 $tanggal = date('Y-m-d');
-$query = "SELECT * FROM absensi WHERE satpam_id = ? AND tanggal = ?";
+$query = "SELECT * FROM absensi WHERE satpam_id = ? AND tanggal = ? AND shift = ?";
 $stmt = $conn->prepare($query);
-$stmt->bind_param("is", $satpam_id, $tanggal);
+$stmt->bind_param("iss", $satpam_id, $tanggal, $shift);
 $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result->num_rows == 0) {
     echo json_encode([
         "success" => false,
-        "message" => "Anda belum melakukan check-in hari ini"
+        "message" => "Anda belum melakukan check-in untuk shift $shift hari ini"
     ]);
     exit();
 }
@@ -104,10 +105,10 @@ if ($result->num_rows == 0) {
 $absensi = $result->fetch_assoc();
 
 // Cek apakah sudah check-out
-if ($absensi['jam_keluar'] != NULL) {
+if ($absensi['jam_keluar'] != NULL && $absensi['jam_keluar'] != '00:00:00') {
     echo json_encode([
         "success" => false,
-        "message" => "Anda sudah melakukan check-out hari ini"
+        "message" => "Anda sudah melakukan check-out untuk shift $shift hari ini"
     ]);
     exit();
 }
@@ -126,6 +127,7 @@ if ($stmt_update->execute()) {
         "message" => "Check-out berhasil",
         "data" => [
             "tanggal" => $tanggal,
+            "shift" => $shift,
             "jam_masuk" => $absensi['jam_masuk'],
             "jam_keluar" => $jam_keluar,
             "status" => $absensi['status'],

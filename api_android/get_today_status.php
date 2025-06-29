@@ -67,34 +67,48 @@ while ($row = $result_absensi->fetch_assoc()) {
 }
 $stmt_absensi->close();
 
-// Tentukan shift aktif saat ini
-$jam = intval(date('H'));
+// Tentukan shift aktif berdasarkan jadwal yang ada
 $current_shift = '';
-if ($jam >= 7 && $jam < 15) {
-    $current_shift = 'P';
-} elseif ($jam >= 15 && $jam < 23) {
-    $current_shift = 'S';
-} else {
-    $current_shift = 'M';
+$jam = intval(date('H'));
+
+// Jika ada jadwal, tentukan shift aktif berdasarkan waktu
+if (!empty($jadwal_list)) {
+    if ($jam >= 7 && $jam < 15) {
+        $current_shift = 'P';
+    } elseif ($jam >= 15 && $jam < 23) {
+        $current_shift = 'S';
+    } else {
+        $current_shift = 'M';
+    }
+    
+    // Cek apakah shift aktif ada di jadwal
+    $shift_ada_di_jadwal = false;
+    foreach ($jadwal_list as $jadwal) {
+        if ($jadwal['shift'] == $current_shift) {
+            $shift_ada_di_jadwal = true;
+            break;
+        }
+    }
+    
+    // Jika shift aktif tidak ada di jadwal, ambil shift pertama dari jadwal
+    if (!$shift_ada_di_jadwal && !empty($jadwal_list)) {
+        $current_shift = $jadwal_list[0]['shift'];
+    }
 }
 
-// Default status untuk setiap shift
-$default_shifts = ['P', 'S', 'M'];
+// Status untuk shift yang ada di jadwal saja
 $shift_status = [];
-foreach ($default_shifts as $s) {
-    $shift_status[$s] = [
+foreach ($jadwal_list as $jadwal) {
+    $shift = $jadwal['shift'];
+    $absensi = isset($absensi_list[$shift]) ? $absensi_list[$shift] : null;
+    
+    $shift_status[$shift] = [
         "check_in" => false,
         "check_out" => false,
         "jam_masuk" => null,
         "jam_keluar" => null,
         "status_kehadiran" => "belum_absen"
     ];
-}
-
-// Update status untuk shift yang ada di jadwal
-foreach ($jadwal_list as $jadwal) {
-    $shift = $jadwal['shift'];
-    $absensi = isset($absensi_list[$shift]) ? $absensi_list[$shift] : null;
     
     if ($absensi !== null) {
         $shift_status[$shift] = [
@@ -105,6 +119,11 @@ foreach ($jadwal_list as $jadwal) {
             "status_kehadiran" => $absensi['status']
         ];
     }
+}
+
+// Jika tidak ada jadwal, pastikan shift_status adalah objek kosong
+if (empty($shift_status)) {
+    $shift_status = (object)[];
 }
 
 // Keterangan shift
@@ -127,7 +146,7 @@ $status = [
 ];
 
 // Update status berdasarkan shift aktif
-if (isset($shift_status[$current_shift])) {
+if (!empty($current_shift) && isset($shift_status[$current_shift])) {
     $status = array_merge($status, $shift_status[$current_shift]);
 }
 

@@ -343,6 +343,34 @@ CREATE TABLE `password_reset_tokens` (
 
 /*Data for the table `password_reset_tokens` */
 
+/*Table structure for table `pengajuan` */
+
+DROP TABLE IF EXISTS `pengajuan`;
+
+CREATE TABLE `pengajuan` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `satpam_id` bigint unsigned NOT NULL,
+  `tanggal_pengajuan` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `jenis_pengajuan` enum('izin','sakit','cuti','pulang_cepat') COLLATE utf8mb4_general_ci NOT NULL,
+  `tanggal_mulai` date NOT NULL,
+  `tanggal_selesai` date NOT NULL,
+  `alasan` text COLLATE utf8mb4_general_ci NOT NULL,
+  `bukti_foto` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `status` enum('pending','disetujui','ditolak') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'pending',
+  `catatan_admin` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT '-',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `satpam_id` (`satpam_id`),
+  CONSTRAINT `pengajuan_ibfk_1` FOREIGN KEY (`satpam_id`) REFERENCES `datasatpam` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+/*Data for the table `pengajuan` */
+
+insert  into `pengajuan`(`id`,`satpam_id`,`tanggal_pengajuan`,`jenis_pengajuan`,`tanggal_mulai`,`tanggal_selesai`,`alasan`,`bukti_foto`,`status`,`catatan_admin`,`created_at`,`updated_at`) values 
+(2,2,'2025-07-04 12:10:18','izin','2025-07-04','2025-07-04','ada acara','http://127.0.0.1/absensi/uploads_bukti_pengajuan/6867623ae7b99_h3.jpg','pending','-','2025-07-04 12:10:18','2025-07-04 12:42:52'),
+(4,2,'2025-07-04 12:50:19','izin','2025-07-04','2025-07-05','coba','http://127.0.0.1/absensi/uploads_bukti_pengajuan/68676b9bb09d2_w3.jpg','pending','-','2025-07-04 12:50:19','2025-07-04 12:50:19');
+
 /*Table structure for table `sessions` */
 
 DROP TABLE IF EXISTS `sessions`;

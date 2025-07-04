@@ -103,14 +103,14 @@ foreach ($jadwal_list as $jadwal) {
     $absensi = isset($absensi_list[$shift]) ? $absensi_list[$shift] : null;
     
     $shift_status[$shift] = [
-        "check_in" => false,
-        "check_out" => false,
-        "jam_masuk" => null,
-        "jam_keluar" => null,
-        "status_kehadiran" => "belum_absen"
-    ];
-    
-    if ($absensi !== null) {
+    "check_in" => false,
+    "check_out" => false,
+    "jam_masuk" => null,
+    "jam_keluar" => null,
+    "status_kehadiran" => "belum_absen"
+];
+
+if ($absensi !== null) {
         $shift_status[$shift] = [
             "check_in" => !empty($absensi['jam_masuk']),
             "check_out" => !empty($absensi['jam_keluar']) && $absensi['jam_keluar'] != "00:00:00",

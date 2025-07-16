@@ -150,6 +150,50 @@ if (!empty($current_shift) && isset($shift_status[$current_shift])) {
     $status = array_merge($status, $shift_status[$current_shift]);
 }
 
+// Inisialisasi status boleh checkout
+$can_check_out = false;
+
+// Hanya proses jika ada shift yang sedang aktif
+if (!empty($current_shift) && isset($shift_info[$current_shift])) {
+    try {
+        // Ambil rentang waktu dari shift_info, contoh: "15.00 - 23.00"
+        $time_range = $shift_info[$current_shift];
+        
+        // Pisahkan jam mulai dan jam selesai
+        $times = explode(' - ', $time_range);
+        
+        // Ambil jam selesai dan ganti titik dengan titik dua, contoh: "23.00" -> "23:00"
+        $end_time_str = str_replace('.', ':', $times[1]);
+
+        // Buat objek DateTime untuk waktu sekarang dan waktu selesai shift
+        $now = new DateTime();
+        $shift_end_time = new DateTime($end_time_str);
+
+        // Kasus khusus untuk shift malam (M) yang melewati tengah malam
+        if ($current_shift === 'M' && $now->format('H') < 12) {
+            // Jika sekarang adalah jam 00:00 - 07:00, berarti shift berakhir hari ini
+        } elseif ($current_shift === 'M') {
+            // Jika sekarang adalah jam 23:00, berarti shift berakhir besok
+            $shift_end_time->add(new DateInterval('P1D'));
+        }
+
+        // Hitung waktu 30 menit sebelum shift berakhir
+        $checkout_window_start = (clone $shift_end_time)->modify('-30 minutes');
+
+        // Cek apakah waktu sekarang berada di dalam jendela waktu checkout
+        if ($now >= $checkout_window_start && $now <= $shift_end_time) {
+            $can_check_out = true;
+        }
+
+    } catch (Exception $e) {
+        // Jika terjadi error, anggap tidak bisa checkout
+        $can_check_out = false;
+    }
+}
+
+// Tambahkan flag 'can_check_out' ke dalam array status
+$status['can_check_out'] = $can_check_out;
+
 echo json_encode([
     "success" => true,
     "message" => "Data status hari ini berhasil diambil",

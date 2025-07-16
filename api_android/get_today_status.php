@@ -128,7 +128,7 @@ if (empty($shift_status)) {
 
 // Keterangan shift
 $shift_info = [
-    "P" => "07.00 - 15.00",
+    "P" => "06.00 - 15.00",
     "S" => "15.00 - 23.00",
     "M" => "23.00 - 07.00",
     "L" => "Libur"

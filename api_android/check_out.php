@@ -36,11 +36,11 @@ try {
                     JOIN lokasikerja l ON d.lokasikerja_id = l.id
                     WHERE d.id = ?";
     $stmt_lokasi = $conn->prepare($query_lokasi);
-    
+
     if (!$stmt_lokasi) {
         throw new Exception("Prepare statement failed: " . $conn->error);
     }
-    
+
     $stmt_lokasi->bind_param("i", $satpam_id);
     $stmt_lokasi->execute();
     $result_lokasi = $stmt_lokasi->get_result();
@@ -110,7 +110,7 @@ try {
     // Definisikan array shift_info
     $shift_info = [
         "P" => "07:00 - 15:00",
-        "S" => "15:00 - 23:00", 
+        "S" => "15:00 - 23:00",
         "M" => "23:00 - 07:00",
         "L" => "Libur"
     ];
@@ -118,7 +118,7 @@ try {
     // Validasi shift
     if (!isset($shift_info[$shift]) || $shift == 'L') {
         echo json_encode([
-            "success" => false, 
+            "success" => false,
             "message" => "Kode shift tidak valid atau Anda tidak bisa checkout saat libur."
         ]);
         exit();
@@ -132,11 +132,11 @@ try {
     // Cek data absensi
     $query = "SELECT * FROM absensi WHERE satpam_id = ? AND tanggal = ? AND shift = ?";
     $stmt = $conn->prepare($query);
-    
+
     if (!$stmt) {
         throw new Exception("Prepare statement failed: " . $conn->error);
     }
-    
+
     $stmt->bind_param("iss", $satpam_id, $tanggal, $shift);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -161,8 +161,11 @@ try {
     }
 
     // Cek apakah pulang awal
-    $is_pulang_awal = ($jam_keluar_sekarang < $jam_selesai_shift);
-    
+    $shift_end_time = new DateTime($jam_selesai_shift);
+    $checkout_time = new DateTime($jam_keluar_sekarang);
+    $selisih_menit = ($shift_end_time->getTimestamp() - $checkout_time->getTimestamp()) / 60;
+    $is_pulang_awal = $selisih_menit > 30;
+
     // Penanganan khusus untuk shift malam
     if ($shift == 'M' && $jam_keluar_sekarang > '12:00:00') {
         $is_pulang_awal = false;
@@ -173,7 +176,7 @@ try {
     if ($is_pulang_awal) {
         if (empty($keterangan_pulang_awal)) {
             echo json_encode([
-                "success" => false, 
+                "success" => false,
                 "message" => "Keterangan wajib diisi karena Anda checkout lebih awal."
             ]);
             exit();
@@ -195,11 +198,11 @@ try {
     // Update data absensi
     $query_update = "UPDATE absensi SET jam_keluar = ?, latitude_keluar = ?, longitude_keluar = ?, keterangan_pulang_awal = ? WHERE id = ?";
     $stmt_update = $conn->prepare($query_update);
-    
+
     if (!$stmt_update) {
         throw new Exception("Prepare statement failed: " . $conn->error);
     }
-    
+
     $stmt_update->bind_param("sddsi", $jam_keluar_sekarang, $latitude, $longitude, $keterangan_final, $absensi['id']);
 
     if ($stmt_update->execute()) {
@@ -273,7 +276,7 @@ function calculateDistance($lat1, $lon1, $lat2, $lon2)
 
         error_log("Final distance calculated: $distance meters");
         return $distance;
-        
+
     } catch (Exception $e) {
         error_log("Error in calculateDistance: " . $e->getMessage());
         return 99999;

@@ -53,22 +53,22 @@ if ($result->num_rows > 0) {
         if (!empty($row['jam_masuk']) && !empty($row['jam_keluar'])) {
             $masuk = strtotime($row['tanggal'] . ' ' . $row['jam_masuk']);
             $keluar = strtotime($row['tanggal'] . ' ' . $row['jam_keluar']);
-            
+
             // Handling untuk shift malam yang melewati tengah malam
             if ($keluar < $masuk) {
                 $keluar = strtotime('+1 day', $keluar);
             }
-            
+
             $diff_seconds = $keluar - $masuk;
             $hours = floor($diff_seconds / 3600);
             $minutes = floor(($diff_seconds % 3600) / 60);
-            
+
             $durasi = sprintf("%02d:%02d", $hours, $minutes);
         }
-        
+
         // Tentukan shift jika tidak ada di jadwal
         $shift = $row['shift'] ?? "-";
-        
+
         $absensi[] = [
             "id" => $row['id'],
             "tanggal" => $row['tanggal'],
@@ -122,4 +122,4 @@ echo json_encode([
 
 $stmt->close();
 $conn->close();
-?> 
+?>

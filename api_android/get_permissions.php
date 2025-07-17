@@ -7,12 +7,10 @@ header('Content-Type: application/json');
 date_default_timezone_set('Asia/Jakarta');
 
 // --- 1. Ambil Parameter dari POST ---
-// Ambil ID satpam, serta bulan dan tahun untuk filter
 $satpam_id = isset($_POST['satpam_id']) ? $_POST['satpam_id'] : '';
-$bulan = isset($_POST['bulan']) ? $_POST['bulan'] : date('m'); // Default bulan ini
-$tahun = isset($_POST['tahun']) ? $_POST['tahun'] : date('Y'); // Default tahun ini
+$bulan = isset($_POST['bulan']) ? $_POST['bulan'] : date('m');
+$tahun = isset($_POST['tahun']) ? $_POST['tahun'] : date('Y');
 
-// Validasi ID Satpam
 if (empty($satpam_id)) {
     echo json_encode([
         "success" => false,
@@ -22,8 +20,6 @@ if (empty($satpam_id)) {
 }
 
 // --- 2. Buat dan Eksekusi Query SQL ---
-// Query untuk mengambil data dari tabel 'pengajuan'
-// difilter berdasarkan satpam_id, bulan, dan tahun dari tanggal_pengajuan
 $sql = "SELECT 
             id, 
             tanggal_pengajuan, 
@@ -40,12 +36,12 @@ $sql = "SELECT
             satpam_id = ? 
             AND MONTH(tanggal_pengajuan) = ? 
             AND YEAR(tanggal_pengajuan) = ?
+            AND jenis_pengajuan IN ('sakit', 'izin', 'cuti', 'pulang cepat') -- <-- Baris ini ditambahkan
         ORDER BY 
             tanggal_pengajuan DESC";
 
 $stmt = $conn->prepare($sql);
 if ($stmt === false) {
-    // Jika prepare statement gagal
     echo json_encode([
         "success" => false,
         "message" => "Query SQL tidak valid: " . $conn->error
@@ -53,10 +49,7 @@ if ($stmt === false) {
     exit();
 }
 
-// Bind parameter ke query
 $stmt->bind_param("iii", $satpam_id, $bulan, $tahun);
-
-// Eksekusi query
 $stmt->execute();
 $result = $stmt->get_result();
 
@@ -64,26 +57,21 @@ $result = $stmt->get_result();
 $permissions_list = [];
 if ($result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
-        // Tambahkan setiap baris data ke dalam array
         $permissions_list[] = $row;
     }
 }
 
-// Tutup statement dan koneksi
 $stmt->close();
 $conn->close();
 
 // --- 4. Kirim Respons JSON ---
-// Cek apakah ada data yang ditemukan
 if (empty($permissions_list)) {
-    // Jika tidak ada data
     echo json_encode([
-        "success" => true, // Operasi berhasil, namun data kosong
+        "success" => true,
         "message" => "Tidak ada data pengajuan untuk periode ini.",
-        "data" => [] // Kirim array kosong
+        "data" => []
     ]);
 } else {
-    // Jika data ditemukan
     echo json_encode([
         "success" => true,
         "message" => "Data riwayat pengajuan berhasil diambil.",
